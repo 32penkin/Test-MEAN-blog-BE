@@ -2,7 +2,7 @@
   "name": "blog",
   "version": "1.0.0",
   "description": "",
-  "main": "serv.js",
+  "main": "node serv.js",
   "scripts": {
     "start": "node serv.js",
     "dev": "nodemon serv.js"
@@ -10,10 +10,12 @@
   "dependencies": {
     "body-parser": "^1.17.1",
     "express": "^4.15.2",
-    "mongojs": "^2.4.0"
-  },
-  "devDependencies": {
+    "mongojs": "^2.4.0",
     "nodemon": "^1.11.0"
+  },
+  "engines": {
+    "node": "6.9.4",
+    "npm": "3.10.10"
   },
   "author": "Yauhen Penkin",
   "license": "ISC"

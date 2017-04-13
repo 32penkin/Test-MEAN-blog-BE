@@ -1,0 +1,20 @@
+{
+  "name": "blog",
+  "version": "1.0.0",
+  "description": "",
+  "main": "serv.js",
+  "scripts": {
+    "start": "node serv.js",
+    "dev": "nodemon serv.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.17.1",
+    "express": "^4.15.2",
+    "mongojs": "^2.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.11.0"
+  },
+  "author": "Yauhen Penkin",
+  "license": "ISC"
+}

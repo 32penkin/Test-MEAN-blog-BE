@@ -9,6 +9,8 @@ const db = mongojs(connectionString, ['bloglist', 'commentlist']);
 const postsCollection = db.collection('bloglist');
 const commentCollection = db.collection('commentlist');
 
+app.set('port', (process.env.PORT || 3000));
+
 app.use(bodypParser.json());
 
 app.all('*', function (req, res, next) {
@@ -61,7 +63,9 @@ app.post('/commentlist', function (req, res) {
   });
 });
 
-
-const server = app.listen(3000, function () {
-  console.log('Server running at http://localhost:' + server.address().port);
+// const server = app.listen(3000, function () {
+//   console.log('Server running at http://localhost:' + server.address().port);
+// });
+app.listen(app.get('port'), function() {
+  console.log('App is running on port', app.get('port'));
 });

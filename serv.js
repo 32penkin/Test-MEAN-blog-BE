@@ -2,8 +2,8 @@ const express = require('express');
 const mongojs = require('mongojs');
 const bodypParser = require('body-parser');
 
-//let connectionString = 'mongodb://bloglist:bloglist@ds111549.mlab.com:11549/bloglist';
- let connectionString = 'mongodb://localhost:27017/bloglist';
+let connectionString = 'mongodb://bloglist:bloglist@ds111549.mlab.com:11549/bloglist';
+//let connectionString = 'mongodb://localhost:27017/bloglist';
 const app = express();
 const db = mongojs(connectionString, ['bloglist', 'commentlist']);
 const postsCollection = db.collection('bloglist');

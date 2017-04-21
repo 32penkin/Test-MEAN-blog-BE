@@ -1,82 +1,39 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+const jwtdecode = require('jwt-decode');
+const config = require('./config/appconfig');
+const passport = require('./config/passportconfig');
+const postSchema = require('./config/Data Schemas/postsSchema');
+const commentSchema = require('./config/Data Schemas/commentsSchema');
+const userSchema = require('./config/Data Schemas/usersSchema');
 
-const cookieParser = require('cookie-parser');
-const session = require('express-session');
-
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
-passport.use(new LocalStrategy(function (username, password, done) {
-  userCollection.findOne({username: username, password: password}, function (err, user) {
-    if(user){
-      return done(null, user);
-    }
-    return done(null, false, {message: 'Unable to login'});
-  });
-}));
-passport.serializeUser(function (user, done) {
-  done(null, user);
-});
-passport.deserializeUser(function (user, done) {
-  done(null, user);
-});
-
-let connectionString = 'mongodb://bloglist:bloglist@ds111549.mlab.com:11549/bloglist';
-//let connectionString = 'mongodb://localhost:27017/bloglist';
-const app = express();
-
-const db = mongoose.createConnection(connectionString);
+const db = mongoose.createConnection(config.connectionString);
 db.on("error", console.error.bind(console, "connection error:"));
-db.once("open", function callback () {
+db.once("open", function callback() {
   console.log("Connected!")
 });
-
-const postSchema = new mongoose.Schema( {
-  name: { type: String },
-  content: { type: String },
-  date: { type: String },
-  author: { type: String }
-} );
-
-const commentSchema = new mongoose.Schema( {
-  content: { type: String },
-  date: { type: String },
-  post_id: {type: String},
-  author: { type: String }
-} );
-
-const userSchema = new mongoose.Schema( {
-  username: {type: String},
-  password: {type: String},
-  email: {type: String},
-  firstname: {type: String},
-  lastname: {type: String}
-} );
 
 let postsCollection = db.model('postlist', postSchema);
 let commentsCollection = db.model('commentlist', commentSchema);
 let userCollection = db.model('userlist', userSchema);
 
 
+const app = express();
 app.set('port', (process.env.PORT || 3000));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(session({ secret: 'this is the secret' }));
-app.use(cookieParser());
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(passport.initialize());
 app.use(passport.session());
 
 app.all('*', function (req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'PUT, GET, POST, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'accept, content-type, x-parse-application-id, x-parse-rest-api-key, x-parse-session-token');
-  if ('OPTIONS' == req.method) {
-    res.sendStatus(200);
-  }
-  else {
-    next();
-  }
+  res.header('Access-Control-Allow-Headers', 'accept, content-type, x-parse-application-id, ' +
+    'x-parse-rest-api-key, x-parse-session-token, Authorization');
+  if ('OPTIONS' == req.method) { res.sendStatus(200) }
+  else { next() }
 });
 
 app.get('/bloglist', function (req, res) {
@@ -102,7 +59,7 @@ app.get('/bloglist/:id', function (req, res) {
         res.sendStatus(400);
       }
     );
-  });
+});
 
 app.get('/commentlist', function (req, res) {
   commentsCollection.find(function (err, docs) {
@@ -123,13 +80,37 @@ app.post('/commentlist', function (req, res) {
   });
 });
 
-app.post('/userlist', passport.authenticate('local'), function (req, res) {
-  res.json(req.user);
+app.post('/userlist', function (req, res) {
+  userCollection.findOne({
+    username: req.body.username
+  }, function (err, user) {
+    if (err) throw err;
+    if (!user) {
+      res.send({success: false, message: 'Authentication failed. User not found.'});
+    } else {
+      if (req.body.password == user.password) {
+        let token = jwt.sign(user, config.secretString);
+        res.json({success: true, token: token});
+      }
+      else {
+        res.send({success: false, message: 'Authentication failed. Passwords did not match.'});
+      }
+    }
+  });
+});
+
+
+app.get('/profile', function (req, res) {
+  let a = req.headers.authorization;
+  let currentUserDecodedEmail = jwtdecode(a)._doc.email;
+  userCollection.findOne({email: currentUserDecodedEmail}, function (err, user) {
+    res.json(user);
+  });
 });
 
 app.post('/register', function (req, res) {
   userCollection.findOne({username: req.body.username}, function (err, user) {
-    if(user){
+    if (user) {
       res.json(null);
       return;
     }
@@ -137,7 +118,9 @@ app.post('/register', function (req, res) {
       let newUser = new userCollection(req.body);
       newUser.save(function (err, user) {
         req.login(user, function (err) {
-          if(err) { return next(err); }
+          if (err) {
+            return next(err);
+          }
           res.json(user);
         });
       });
@@ -145,16 +128,10 @@ app.post('/register', function (req, res) {
   });
 });
 
-
-app.post('/logout', function(req, res) {
-  req.session.destroy();
+app.post('/logout', function (req, res) {
   res.send(200);
 });
 
-// const server = app.listen(3000, function () {
-//   console.log('Server running at http://localhost:' + server.address().port);
-// });
-
-app.listen(app.get('port'), function() {
+app.listen(app.get('port'), function () {
   console.log('App is running on port', app.get('port'));
 });

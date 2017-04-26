@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const jwtdecode = require('jwt-decode');
+const bcrypt = require('bcrypt');
 const config = require('./config/appconfig');
 const passport = require('./config/passportconfig');
 const postSchema = require('./config/Data Schemas/postsSchema');
@@ -88,7 +89,8 @@ app.post('/userlist', function (req, res) {
     if (!user) {
       res.send({success: false, message: 'Authentication failed. User not found.'});
     } else {
-      if (req.body.password == user.password) {
+      // if (req.body.password == user.password) {
+      if (bcrypt.compareSync(req.body.password, user.password)) {
         let token = jwt.sign(user, config.secretString);
         res.json({success: true, token: token});
       }
@@ -115,7 +117,9 @@ app.post('/register', function (req, res) {
       return;
     }
     else {
-      let newUser = new userCollection(req.body);
+      let hashUser = req.body;
+      hashUser.password = bcrypt.hashSync(req.body.password, config.saltRounds);
+      let newUser = new userCollection(hashUser);
       newUser.save(function (err, user) {
         req.login(user, function (err) {
           if (err) {
